@@ -1,0 +1,313 @@
+{
+  "name": "My workflow 6",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -704,
+        64
+      ],
+      "id": "96a5ee59-9f89-4ef1-9cc7-56e238247356",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nSELECT \n  ao.name AS origem,\n  ad.name AS destino,\n  COUNT(*) AS total_voos\nFROM flight f\nJOIN airport ao ON f.from = ao.airport_id\nJOIN airport ad ON f.to = ad.airport_id\nGROUP BY origem, destino\nORDER BY total_voos DESC\nLIMIT 5;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -496,
+        -176
+      ],
+      "id": "672eaaf1-1c5b-4c06-a9ad-d6aee7307b59",
+      "name": "Companies with the most reservations (demand)",
+      "credentials": {
+        "mySql": {
+          "id": "C8IXo60gkoFMCeoQ",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nSELECT \n  ap.name AS aeroporto_origem,\n  COUNT(*) AS total_partidas\nFROM flight f\nJOIN airport ap ON f.from = ap.airport_id\nGROUP BY ap.name\nORDER BY total_partidas DESC\nLIMIT 5;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -496,
+        16
+      ],
+      "id": "b3ce5eb3-cfec-4ebe-8749-8871f569e330",
+      "name": "Airports with the highest number of departures (identifies hubs)",
+      "credentials": {
+        "mySql": {
+          "id": "C8IXo60gkoFMCeoQ",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "\nSELECT \n  ao.name AS origem,\n  ad.name AS destino,\n  COUNT(*) AS total_voos\nFROM flight f\nJOIN airport ao ON f.from = ao.airport_id\nJOIN airport ad ON f.to = ad.airport_id\nGROUP BY origem, destino\nORDER BY total_voos DESC\nLIMIT 5;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -496,
+        176
+      ],
+      "id": "ad60d10d-4f2a-4e20-a247-d9881dff235b",
+      "name": "Most popular routes (origin → destination)",
+      "credentials": {
+        "mySql": {
+          "id": "C8IXo60gkoFMCeoQ",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \n  at.identifier AS modelo_aeronave,\n  COUNT(*) AS total_voos\nFROM flight f\nJOIN airplane a ON f.airplane_id = a.airplane_id\nJOIN airplane_type at ON a.type_id = at.type_id\nGROUP BY at.identifier\nORDER BY total_voos DESC\nLIMIT 5;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        -496,
+        352
+      ],
+      "id": "caf74ef5-b42d-4ed7-8845-69f8853e30e3",
+      "name": "Most Used Aircraft",
+      "credentials": {
+        "mySql": {
+          "id": "C8IXo60gkoFMCeoQ",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🔄 Recupera os dados de cada nó usando os nomes reais\nconst reservas = $items('Companies with the most reservations (demand)').map(item => item.json);\nconst partidas = $items('Airports with the highest number of departures (identifies hubs)').map(item => item.json);\nconst rotas = $items('Most popular routes (origin → destination)').map(item => item.json);\nconst aeronaves = $items('Most Used Aircraft').map(item => item.json);\n\n// 📋 Função para formatar os dados como HTML de tabela\nfunction formatarTabela(titulo, dados, col1, col2) {\n  let html = `<h3>${titulo}</h3><table border=\"1\" cellpadding=\"4\" cellspacing=\"0\"><tr><th>${col1}</th><th>${col2}</th></tr>`;\n  dados.forEach(item => {\n    html += `<tr><td>${item[col1]}</td><td>${item[col2]}</td></tr>`;\n  });\n  html += `</table><br>`;\n  return html;\n}\n\n// 🧠 Gera o corpo do e-mail ou do prompt\nconst corpoEmail =\n  `<h2>📊 Relatório Executivo - Plataforma de Aviação</h2>` +\n  formatarTabela('1. Companhias com mais reservas', reservas, 'companhia', 'total_reservas') +\n  formatarTabela('2. Aeroportos com mais partidas', partidas, 'aeroporto_origem', 'total_partidas') +\n  formatarTabela('3. Rotas mais populares', rotas, 'origem', 'total_voos') +\n  formatarTabela('4. Modelos de aeronave mais usados', aeronaves, 'modelo_aeronave', 'total_voos');\n\n// 🧽 Escapa caracteres para uso seguro em SQL ou texto\nfunction escaparTexto(texto) {\n  return texto\n    .replace(/\\\\/g, '\\\\\\\\')   // barras\n    .replace(/'/g, \"\\\\'\")     // aspas simples\n    .replace(/\"/g, '\\\\\"');    // aspas duplas\n}\n\nconst promptSeguro = escaparTexto(corpoEmail);\n\n// 🔁 Retorna JSON para uso no ML_GENERATE ou envio por e-mail\nreturn [{ json: { prompt: promptSeguro, corpoHtml: corpoEmail } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        32
+      ],
+      "id": "b29c01e3-01ec-4d05-9321-90336cc24d45",
+      "name": "Consolidate Infos"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -256,
+        0
+      ],
+      "id": "552472f9-f48f-4b27-bc19-2316905d8059",
+      "name": "Waiting SQL"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT sys.ML_GENERATE(\n  'Você é um especialista em análise de dados e gestão estratégica no setor aéreo. \nAnalise cuidadosamente as informações a seguir e produza um resumo executivo com linguagem clara e objetiva, voltado para diretores e tomadores de decisão do setor de aviação.\n\nPara cada uma das visões abaixo, destaque:\n- O que os dados indicam\n- Principais tendências observadas\n- Riscos ou oportunidades\n- Sugestões estratégicas, se aplicável\n\n### Informações disponíveis:\n{{ $json.corpoHtml }}',\n  JSON_OBJECT(\n    'task', 'generation',\n    'model_id', 'cohere.command-r-plus-08-2024',\n    'language', 'pt',\n    'max_tokens', 4000\n  )\n) AS resposta;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        64,
+        32
+      ],
+      "id": "850b4483-a9b3-4ad9-9568-5a3c4c376b0c",
+      "name": "GenAI - prompt - pt",
+      "credentials": {
+        "mySql": {
+          "id": "C8IXo60gkoFMCeoQ",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🧠 Texto bruto vindo do ML_GENERATE\nconst textoMarkdown = $json.resposta.text;\n\n// 🔁 Função simples para converter Markdown em HTML\nfunction markdownParaHTML(md) {\n  return md\n    .replace(/^### (.*$)/gim, '<h3>$1</h3>')\n    .replace(/^## (.*$)/gim, '<h2>$1</h2>')\n    .replace(/^# (.*$)/gim, '<h1>$1</h1>')\n    .replace(/\\*\\*(.*?)\\*\\*/gim, '<b>$1</b>')\n    .replace(/\\*(.*?)\\*/gim, '<i>$1</i>')\n    .replace(/\\n{2,}/g, '<br><br>')\n    .replace(/\\n/g, '<br>');\n}\n\n// 🎨 Converte o Markdown retornado pelo LLM\nconst htmlFormatado = markdownParaHTML(textoMarkdown);\n\nreturn [{ json: { corpo_email: htmlFormatado } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        32
+      ],
+      "id": "4749ee0d-c7ef-4c60-9751-a350ceb84539",
+      "name": "Format E-mail"
+    },
+    {
+      "parameters": {
+        "fromEmail": "erik.j0716@gmail.com",
+        "toEmail": "devdoblas@gmail.com",
+        "subject": "USTJ",
+        "html": "={{ $json.corpo_email }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        432,
+        32
+      ],
+      "id": "af17efbf-8715-47fb-aa9b-2c5382cc3c04",
+      "name": "Send email",
+      "webhookId": "09fcba00-9cc4-4d92-a028-479424007780",
+      "credentials": {
+        "smtp": {
+          "id": "URdYbdOMF8SZwB9b",
+          "name": "SMTP account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Companies with the most reservations (demand)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Airports with the highest number of departures (identifies hubs)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Most popular routes (origin → destination)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Most Used Aircraft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airports with the highest number of departures (identifies hubs)": {
+      "main": [
+        [
+          {
+            "node": "Waiting SQL",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Companies with the most reservations (demand)": {
+      "main": [
+        [
+          {
+            "node": "Waiting SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Most popular routes (origin → destination)": {
+      "main": [
+        [
+          {
+            "node": "Waiting SQL",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Most Used Aircraft": {
+      "main": [
+        [
+          {
+            "node": "Waiting SQL",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Consolidate Infos": {
+      "main": [
+        [
+          {
+            "node": "GenAI - prompt - pt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Waiting SQL": {
+      "main": [
+        [
+          {
+            "node": "Consolidate Infos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GenAI - prompt - pt": {
+      "main": [
+        [
+          {
+            "node": "Format E-mail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format E-mail": {
+      "main": [
+        [
+          {
+            "node": "Send email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a4764cc4-fd67-4c34-82ba-cd25c68b02d6",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "323e9566b1c5e3abf2585bee4c420d16a82c125f65fcd99915d6a0df4a32c2f5"
+  },
+  "id": "QF3VaIZoVIQd4K4l",
+  "tags": []
+}
